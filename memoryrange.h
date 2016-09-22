@@ -6,16 +6,19 @@ class MemoryRange {
 
 public:
 	MemoryRange(size_t rangeStart, size_t rangeSize, bool free = true);
-	~MemoryRange();
 
-	MemoryRange * findFree(size_t requestedSize);
-	MemoryRange * findRange(size_t blockIndex);
-	MemoryRange * allocRange(size_t requestedSize);
-	void freeRange();
-	void insertAfter(MemoryRange *newRange);
+	void resize(size_t newSize);
+	MemoryRange split(size_t newSize);
+	void merge(const MemoryRange &other);
+	size_t end();
+	size_t start();
+	size_t size();
+	bool isFree();
+	void allocate();
+	void free();
 
-	size_t start;
-	size_t size;
-	bool isFree;
-	MemoryRange *next;
+private:
+	size_t m_start;
+	size_t m_size;
+	bool is_free;
 };

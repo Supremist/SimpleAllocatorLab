@@ -1,68 +1,51 @@
 #include "memoryrange.h"
 
 MemoryRange::MemoryRange(size_t rangeStart, size_t rangeSize, bool free):
-	start(rangeStart),
-	size(rangeSize),
-	isFree(free),
-	next(nullptr)
+	m_start(rangeStart),
+	m_size(rangeSize),
+	is_free(free)
 {
 }
 
-MemoryRange::~MemoryRange()
+MemoryRange MemoryRange::split(size_t newSize)
 {
-	MemoryRange *iter = next;
-	while (iter != nullptr) {
-		MemoryRange *tmp = iter;
-		iter = iter->next;
-		delete tmp;
+	size_t old_size = m_size;
+	resize(newSize);
+	return MemoryRange(end(), old_size - newSize, is_free);
+}
+
+void MemoryRange::merge(const MemoryRange &other)
+{
+	size_t old_end = end();
+	if (m_start > other.start()) {
+		m_start = other.start();
+	}
+	if (old_end < other.end()){
+		resize(other.end() - m_start);
 	}
 }
 
-MemoryRange *MemoryRange::findFree(size_t requestedSize)
+size_t MemoryRange::end()
 {
-	for (MemoryRange * iter = this; iter != nullptr; iter = iter->next) {
-		if (iter->isFree && iter->size >= requestedSize) {
-			return iter;
-		}
-	}
-	return nullptr;
+	return m_start + m_size;
 }
 
-MemoryRange *MemoryRange::findRange(size_t blockIndex)
+size_t MemoryRange::size()
 {
-	for (MemoryRange * iter = this; iter != nullptr; iter = iter->next) {
-		if (blockIndex >= iter->start
-				&& blockIndex <= iter->start + iter->size) {
-			return iter;
-		}
-	}
-	return nullptr;
+	m_size;
 }
 
-MemoryRange *MemoryRange::allocRange(size_t requestedSize)
+bool MemoryRange::isFree()
 {
-	if (requestedSize > size)
-		return nullptr;
-
-	insertAfter(new MemoryRange(start + requestedSize + 1, size - requestedSize));
-	size = requestedSize;
-	isFree = false;
+	return is_free;
 }
 
-void MemoryRange::freeRange()
+void MemoryRange::allocate()
 {
-
+	is_free = false;
 }
 
-void MemoryRange::insertAfter(MemoryRange *newRange)
+void MemoryRange::free()
 {
-	if(!newRange)
-		return;
-
-	MemoryRange *tail = next;
-	next = newRange;
-	MemoryRange *iter = newRange;
-	while(iter->next) iter = iter->next;
-	iter->next = tail;
+	is_free = true;
 }
-
