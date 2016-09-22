@@ -13,11 +13,18 @@ public:
 
 	MemoryPage(size_t pageSize);
 
-	MemoryIter * findFree(size_t requestedSize);
-	MemoryIter * findRange(size_t blockIndex);
-	MemoryIter * allocate(size_t requestedSize);
+	MemoryIter findFree(size_t requestedSize);
+	MemoryIter findRange(size_t blockIndex);
+
+	MemoryIter allocate(size_t requestedSize);
+	void free(MemoryIter range);
+
+	MemoryIter begin();
+	MemoryIter end();
+
 
 private:
+
 	list<MemoryRange> m_ranges;
 
 };

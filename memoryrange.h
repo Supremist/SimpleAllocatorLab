@@ -10,9 +10,9 @@ public:
 	void resize(size_t newSize);
 	MemoryRange split(size_t newSize);
 	void merge(const MemoryRange &other);
-	size_t end();
-	size_t start();
-	size_t size();
+	size_t end() const;
+	size_t start() const;
+	size_t size() const;
 	bool isFree();
 	void allocate();
 	void free();

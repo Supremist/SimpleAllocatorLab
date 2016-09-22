@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdlib>
-#include "memoryrange.h"
+#include "memorypage.h"
 
 class SimpleAllocator
 {
@@ -14,12 +14,12 @@ public:
 	void mem_free(void *addr);
 
 private:
-	inline size_t getBlockCount(size_t pageSize, size_t blockSize);
+	inline size_t align(size_t pageSize, size_t blockSize);
 	size_t getBlockIndex(void * block);
 	void * getBlockPointer(size_t blockIndex);
 
 	size_t m_size;
-	MemoryRange *m_page;
+	MemoryPage * m_page;
 	size_t m_blockSize;
 	void *m_start;
 };
