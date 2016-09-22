@@ -45,7 +45,7 @@ size_t MemoryRange::start() const
 
 size_t MemoryRange::size() const
 {
-	m_size;
+	return m_size;
 }
 
 bool MemoryRange::isFree()

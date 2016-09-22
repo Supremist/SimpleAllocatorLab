@@ -13,6 +13,9 @@ public:
 	//void * mem_realloc(void *addr, size_t size);
 	void mem_free(void *addr);
 
+	const MemoryPage * page() const;
+	size_t blockSize() const;
+
 private:
 	inline size_t align(size_t pageSize, size_t blockSize);
 	size_t getBlockIndex(void * block);

@@ -31,6 +31,16 @@ void SimpleAllocator::mem_free(void *addr)
 	m_page->free(range);
 }
 
+const MemoryPage *SimpleAllocator::page() const
+{
+	return m_page;
+}
+
+size_t SimpleAllocator::blockSize() const
+{
+	return m_blockSize;
+}
+
 size_t SimpleAllocator::align(size_t pageSize, size_t blockSize)
 {
 	return (pageSize + blockSize - 1) / blockSize;

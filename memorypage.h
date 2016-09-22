@@ -19,8 +19,8 @@ public:
 	MemoryIter allocate(size_t requestedSize);
 	void free(MemoryIter range);
 
-	MemoryIter begin();
-	MemoryIter end();
+	MemoryIter begin() const;
+	MemoryIter end() const;
 
 
 private:
