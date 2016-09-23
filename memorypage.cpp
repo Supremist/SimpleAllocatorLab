@@ -16,9 +16,9 @@ MemoryPage::MemoryIter MemoryPage::findFree(size_t requestedSize)
 	return m_ranges.end();
 }
 
-MemoryPage::MemoryIter MemoryPage::findRange(size_t blockIndex)
+MemoryPage::MemoryIter MemoryPage::findRange(size_t blockIndex, MemoryIter searchFrom)
 {
-	for (MemoryIter iter = begin(); iter != end(); ++iter) {
+	for (MemoryIter iter = searchFrom; iter != end(); ++iter) {
 		if (blockIndex >= iter->start() && blockIndex < iter->end()) {
 			return iter;
 		}
@@ -26,19 +26,43 @@ MemoryPage::MemoryIter MemoryPage::findRange(size_t blockIndex)
 	return end();
 }
 
+MemoryPage::MemoryIter MemoryPage::findRange(size_t blockIndex)
+{
+	return findRange(blockIndex, begin());
+}
+
+MemoryPage::MemoryIter MemoryPage::restoreBlock(const MemoryRange &range, MemoryPage::MemoryIter searchFrom)
+{
+	MemoryIter old = findRange(range.start(), searchFrom);
+	if (old == end() || !old->isFree())
+		return end();
+
+	if(range.start() > old->start())
+		old = splitRange(old, range.start() - old->start());
+	if(range.end() < old->end())
+		splitRange(old, range.size());
+	*old = range;
+}
+
 MemoryPage::MemoryIter MemoryPage::allocate(size_t requestedSize)
 {
 	MemoryIter firstFree = findFree(requestedSize);
 	if (firstFree != end() && requestedSize <= firstFree->size()) {
-		MemoryRange tail = firstFree->split(requestedSize);
-		if (tail.size() > 0) {
-			auto insertPosition = firstFree;
-			m_ranges.insert(++insertPosition, 1, tail);
-		}
+		splitRange(firstFree, requestedSize);
 		firstFree->allocate();
 		return firstFree;
 	}
 	return end();
+}
+
+MemoryPage::MemoryIter MemoryPage::reallocate(MemoryPage::MemoryIter range, size_t newSize)
+{
+	MemoryRange backup = *range;
+	free(range);
+	MemoryIter result = allocate(newSize);
+	if (result == end())
+		restoreBlock(backup, begin());
+	return result;
 }
 
 void MemoryPage::free(MemoryPage::MemoryIter range)
@@ -47,23 +71,11 @@ void MemoryPage::free(MemoryPage::MemoryIter range)
 		return;
 
 	range->free();
-	MemoryIter next = range;
-	next++;
-	if(next != end() && next->isFree()) {
-		range->merge(*next);
-		m_ranges.erase(next);
+	for (int shift : {1, -1}) {
+		MemoryIter other = range + shift;
+		if(other != end() && other->isFree())
+			mergeRange(range, other);
 	}
-
-	if (range == begin())
-		return;
-
-	MemoryIter previous = range;
-	previous--;
-	if (previous->isFree()) {
-		previous->merge(*range);
-		m_ranges.erase(previous);
-	}
-
 }
 
 MemoryPage::MemoryIter MemoryPage::begin() const
@@ -74,4 +86,58 @@ MemoryPage::MemoryIter MemoryPage::begin() const
 MemoryPage::MemoryIter MemoryPage::end() const
 {
 	m_ranges.end();
+}
+
+MemoryPage::MemoryIter MemoryPage::splitRange(MemoryPage::MemoryIter range, size_t newSize)
+{
+	if(range == end())
+		return end();
+
+	MemoryRange tail = range->split(newSize);
+	if (tail.size() > 0) {
+		auto insertPosition = range;
+		m_ranges.insert(++insertPosition, 1, tail);
+		return insertPosition;
+	}
+	return end();
+}
+
+MemoryPage::MemoryIter MemoryPage::mergeRange(MemoryIter range, MemoryIter otherRange)
+{
+	if (range != end() && otherRange != end()
+			&& range != otherRange
+			&& range->isFree() == otherRange->isFree()) {
+		range->merge(*otherRange);
+		m_ranges.erase(otherRange);
+		return range;
+	}
+	return end();
+}
+
+MemoryPage::MemoryIter operator +(const MemoryPage::MemoryIter &iter, int i)
+{
+	MemoryPage::MemoryIter result = iter;
+	if (i > 0) {
+		while (i > 0) {
+			result++;
+			i--;
+		}
+	} else {
+		return operator -(iter, -i);
+	}
+	return result;
+}
+
+MemoryPage::MemoryIter operator -(const MemoryPage::MemoryIter &iter, int i)
+{
+	MemoryPage::MemoryIter result = iter;
+	if (i > 0) {
+		while (i > 0) {
+			result--;
+			i--;
+		}
+	} else {
+		return operator +(iter, -i);
+	}
+	return result;
 }

@@ -38,11 +38,15 @@ int main(int argc, char *argv[])
 //	alloc.mem_free(first);
 //	mem_dump(alloc.page(), alloc.blockSize());
 
+//	mem_dump(alloc.page(), alloc.blockSize());
+//	alloc.mem_free(third);
+//	alloc.mem_free(first);
+//	mem_dump(alloc.page(), alloc.blockSize());
+//	alloc.mem_free(second);
+//	mem_dump(alloc.page(), alloc.blockSize());
+
 	mem_dump(alloc.page(), alloc.blockSize());
-	alloc.mem_free(third);
-	alloc.mem_free(first);
-	mem_dump(alloc.page(), alloc.blockSize());
-	alloc.mem_free(second);
+	alloc.mem_realloc(second, 3000);
 	mem_dump(alloc.page(), alloc.blockSize());
     return 0;
 }

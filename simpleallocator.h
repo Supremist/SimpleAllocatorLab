@@ -10,7 +10,7 @@ public:
 	~SimpleAllocator();
 
 	void * mem_alloc(size_t size);
-	//void * mem_realloc(void *addr, size_t size);
+	void * mem_realloc(void *addr, size_t size);
 	void mem_free(void *addr);
 
 	const MemoryPage * page() const;

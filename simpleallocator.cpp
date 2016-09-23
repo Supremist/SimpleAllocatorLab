@@ -25,6 +25,18 @@ void *SimpleAllocator::mem_alloc(size_t size)
 	return getBlockPointer(allocated->start());
 }
 
+void *SimpleAllocator::mem_realloc(void *addr, size_t size)
+{
+	auto blockCount = align(size, m_blockSize);
+	MemoryPage::MemoryIter range = m_page->findRange(getBlockIndex(addr));
+	range = m_page->reallocate(range, blockCount);
+
+	if (range == m_page->end())
+		return nullptr;
+
+	return getBlockPointer(range->start());
+}
+
 void SimpleAllocator::mem_free(void *addr)
 {
 	MemoryPage::MemoryIter range = m_page->findRange(getBlockIndex(addr));
