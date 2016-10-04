@@ -7,7 +7,7 @@ class MemoryRange {
 public:
 	MemoryRange(size_t rangeStart, size_t rangeSize, bool free = true);
 
-	void resize(size_t newSize);
+	virtual void resize(size_t newSize);
 	MemoryRange split(size_t newSize);
 	void merge(const MemoryRange &other);
 	size_t end() const;

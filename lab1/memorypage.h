@@ -10,6 +10,7 @@ class MemoryPage
 {
 public:
 	using MemoryIter = list<MemoryRange>::iterator;
+	using ConstMemoryIter = list<MemoryRange>::const_iterator;
 
 	MemoryPage(size_t pageSize);
 
@@ -22,11 +23,16 @@ public:
 	MemoryIter reallocate(MemoryIter range, size_t newSize);
 	void free(MemoryIter range);
 
-	MemoryIter begin() const;
-	MemoryIter end() const;
+	ConstMemoryIter begin() const;
+	ConstMemoryIter end() const;
+	MemoryIter begin();
+	MemoryIter end();
 
 	MemoryIter splitRange(MemoryIter range, size_t newSize);
 	MemoryIter mergeRange(MemoryIter range, MemoryIter otherRange);
+
+	ConstMemoryIter largestRange() const;
+	size_t freeSpaceSize();
 
 
 private:

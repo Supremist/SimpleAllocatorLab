@@ -1,6 +1,5 @@
 #pragma once
 
-#include "classifiedmemorypage.h"
 #include <vector>
 #include <map>
 #include <set>
@@ -22,8 +21,8 @@ public:
 private:
 	void initBlockSizes(size_t smalestSize, size_t biggestSize, size_t factor = 2);
 
-	vector<ClassifiedMemoryPage *> m_pages;
+	vector<BlockMemoryPage *> m_pages;
 	set<size_t> m_blockSizes;
-	map<size_t, ClassifiedMemoryPage *> m_freePageMap;
+	map<size_t, BlockMemoryPage *> m_freePageMap;
 
 };

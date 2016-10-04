@@ -78,14 +78,24 @@ void MemoryPage::free(MemoryPage::MemoryIter range)
 	}
 }
 
-MemoryPage::MemoryIter MemoryPage::begin() const
+MemoryPage::ConstMemoryIter MemoryPage::begin() const
 {
-	m_ranges.begin();
+	return m_ranges.begin();
 }
 
-MemoryPage::MemoryIter MemoryPage::end() const
+MemoryPage::ConstMemoryIter MemoryPage::end() const
 {
-	m_ranges.end();
+	return m_ranges.end();
+}
+
+MemoryPage::MemoryIter MemoryPage::begin()
+{
+	return m_ranges.begin();
+}
+
+MemoryPage::MemoryIter MemoryPage::end()
+{
+	return m_ranges.end();
 }
 
 MemoryPage::MemoryIter MemoryPage::splitRange(MemoryPage::MemoryIter range, size_t newSize)
@@ -112,6 +122,28 @@ MemoryPage::MemoryIter MemoryPage::mergeRange(MemoryIter range, MemoryIter other
 		return range;
 	}
 	return end();
+}
+
+MemoryPage::ConstMemoryIter MemoryPage::largestRange() const
+{
+	ConstMemoryIter max = begin();
+	for (ConstMemoryIter iter = begin(); iter != end(); ++iter) {
+		if (iter->size() > max->size()) {
+			max = iter;
+		}
+	}
+	return max;
+}
+
+size_t MemoryPage::freeSpaceSize()
+{
+	size_t result = 0;
+	for (MemoryIter iter = begin(); iter != end(); ++iter) {
+		if (iter->isFree()) {
+			result += iter->size();
+		}
+	}
+	return result;
 }
 
 MemoryPage::MemoryIter operator +(const MemoryPage::MemoryIter &iter, int i)
