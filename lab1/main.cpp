@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 //	alloc.mem_dump(cout);
 
 	alloc.mem_dump(cout);
-	alloc.mem_realloc(second, 3000);
+	alloc.mem_realloc(second, 300);
 	alloc.mem_dump(cout);
     return 0;
 }

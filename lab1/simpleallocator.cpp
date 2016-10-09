@@ -1,10 +1,10 @@
 #include "simpleallocator.h"
 
 SimpleAllocator::SimpleAllocator(size_t pageSize, size_t blockSize):
-	AbstractAllocator(BlockAlignUtils::alignUpper(pageSize, blockSize)),
+	AbstractAllocator(BlockAlignUtils::alignUpper(pageSize, blockSize) * blockSize),
 	m_blockSize(blockSize)
 {
-	m_page = new MemoryPage(managedSize());
+	m_page = new MemoryPage<MemoryRange>(managedSize() / m_blockSize);
 }
 
 SimpleAllocator::~SimpleAllocator()
@@ -15,7 +15,7 @@ SimpleAllocator::~SimpleAllocator()
 void *SimpleAllocator::mem_alloc(size_t size)
 {
 	auto blockCount = BlockAlignUtils::alignUpper(size, m_blockSize);
-	MemoryPage::MemoryIter allocated = m_page->allocate(blockCount);
+	MemoryPage<MemoryRange>::MemoryIter allocated = m_page->allocate(blockCount);
 
 	if (allocated == m_page->end())
 		return nullptr;
@@ -26,7 +26,7 @@ void *SimpleAllocator::mem_alloc(size_t size)
 void *SimpleAllocator::mem_realloc(void *addr, size_t size)
 {
 	auto blockCount = BlockAlignUtils::alignUpper(size, m_blockSize);
-	MemoryPage::MemoryIter range = m_page->findRange(getBlockIndex(addr));
+	MemoryPage<MemoryRange>::MemoryIter range = m_page->findRange(getBlockIndex(addr));
 	range = m_page->reallocate(range, blockCount);
 
 	if (range == m_page->end())
@@ -37,21 +37,21 @@ void *SimpleAllocator::mem_realloc(void *addr, size_t size)
 
 void SimpleAllocator::mem_free(void *addr)
 {
-	MemoryPage::MemoryIter range = m_page->findRange(getBlockIndex(addr));
+	MemoryPage<MemoryRange>::MemoryIter range = m_page->findRange(getBlockIndex(addr));
 	m_page->free(range);
 }
 
 void SimpleAllocator::mem_dump(ostream &output, void *start, size_t dumpSize)
 {
 	size_t startBlockIndex = getBlockIndex(start);
-	MemoryPage::MemoryIter startIter;
+	MemoryPage<MemoryRange>::MemoryIter startIter;
 	if (!start) {
 		startIter = m_page->begin();
 	} else {
 		startIter = m_page->findRange(startBlockIndex);
 	}
 
-	MemoryPage::MemoryIter endIter;
+	MemoryPage<MemoryRange>::MemoryIter endIter;
 	if (dumpSize >= managedSize() || dumpSize == 0) {
 		endIter = m_page->end();
 	} else {
@@ -59,7 +59,7 @@ void SimpleAllocator::mem_dump(ostream &output, void *start, size_t dumpSize)
 	}
 
 	output << "Page dump:\n";
-	for (MemoryPage::MemoryIter iter = startIter; iter != endIter; ++iter) {
+	for (MemoryPage<MemoryRange>::MemoryIter iter = startIter; iter != endIter; ++iter) {
 		output << iter->start() * m_blockSize << " - " << iter->end() * m_blockSize<< " ";
 		if (iter->isFree()) {
 			output << "Free";
@@ -80,7 +80,7 @@ size_t SimpleAllocator::largestFreeBlockSize() const
 	m_page->largestRange()->size();
 }
 
-const MemoryPage *SimpleAllocator::page() const
+const MemoryPage<MemoryRange> *SimpleAllocator::page() const
 {
 	return m_page;
 }

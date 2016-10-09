@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include "memorypage.h"
+#include "memoryrange.h"
 #include "blockalignutils.h"
 #include "abstractallocator.h"
 
@@ -19,13 +20,13 @@ public:
 	size_t freeSpaceSize() const override;
 	size_t largestFreeBlockSize() const override;
 
-	const MemoryPage * page() const;
+	const MemoryPage<MemoryRange> * page() const;
 	size_t blockSize() const;
 
 private:
 	size_t getBlockIndex(void *block);
 	void * getBlockPointer(size_t blockIndex);
 
-	MemoryPage * m_page;
+	MemoryPage<MemoryRange> * m_page;
 	size_t m_blockSize;
 };

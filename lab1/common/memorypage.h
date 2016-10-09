@@ -2,22 +2,24 @@
 
 #include <list>
 #include <cstdlib>
-#include "memoryrange.h"
 
 using std::list;
 
+
+template <typename Range>
 class MemoryPage
 {
 public:
-	using MemoryIter = list<MemoryRange>::iterator;
-	using ConstMemoryIter = list<MemoryRange>::const_iterator;
+
+	using MemoryIter = typename list<Range>::iterator;
+	using ConstMemoryIter = typename list<Range>::const_iterator;
 
 	MemoryPage(size_t pageSize);
 
 	MemoryIter findFree(size_t requestedSize);
 	MemoryIter findRange(size_t blockIndex, MemoryIter searchFrom);
 	MemoryIter findRange(size_t blockIndex);
-	MemoryIter restoreBlock(const MemoryRange &range, MemoryIter searchFrom);
+	MemoryIter restoreBlock(const Range &range, MemoryIter searchFrom);
 
 	MemoryIter allocate(size_t requestedSize);
 	MemoryIter reallocate(MemoryIter range, size_t newSize);
@@ -35,11 +37,14 @@ public:
 	size_t freeSpaceSize();
 
 
-private:
-
-	list<MemoryRange> m_ranges;
+protected:
+	list<Range> m_ranges;
 
 };
 
-MemoryPage::MemoryIter operator +(const MemoryPage::MemoryIter &iter, int i);
-MemoryPage::MemoryIter operator -(const MemoryPage::MemoryIter &iter, int i);
+template <typename Range>
+std::_List_iterator<Range> operator+(const std::_List_iterator<Range> &iter, int i);
+template <typename Range>
+std::_List_iterator<Range> operator-(const std::_List_iterator<Range> &iter, int i);
+
+#include "memorypage.hpp"

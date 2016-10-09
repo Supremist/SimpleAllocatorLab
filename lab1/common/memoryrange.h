@@ -8,7 +8,7 @@ public:
 	MemoryRange(size_t rangeStart, size_t rangeSize, bool free = true);
 
 	virtual void resize(size_t newSize);
-	MemoryRange split(size_t newSize);
+	virtual MemoryRange *split(size_t newSize);
 	void merge(const MemoryRange &other);
 	size_t end() const;
 	size_t start() const;
@@ -16,6 +16,8 @@ public:
 	bool isFree();
 	void allocate();
 	void free();
+
+	MemoryRange & operator = (const MemoryRange & other) = default;
 
 private:
 	size_t m_start;

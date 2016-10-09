@@ -3,26 +3,35 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <abstractallocator.h>
+#include "blockmemoryrange.h"
+#include "blockalignutils.h"
+#include "memorypage.h"
 
-class ClassifiedAllocator
+using std::vector;
+using std::map;
+using std::set;
+
+class ClassifiedAllocator: AbstractAllocator
 {
 public:
-	using std::vector;
-	using std::map;
-	using std::set;
+	explicit ClassifiedAllocator(size_t pageCount, size_t pageSize, const set<size_t> &pageClassesSizes = {});
+	explicit ClassifiedAllocator(const vector<size_t> &pageSizes = {}, const set<size_t> &pageClassesSizes = {});
+	~ClassifiedAllocator();
 
-	ClassifiedAllocator(size_t size, size_t pageSize, const set<size_t> &blockSizes = vector());
+	set<size_t> pageClassesSizes() const;
+	void addPageClassesSizes(const set<size_t> &pageClassesSizes);
+	void clearUnusedClasses();
 
+	size_t pageSize();
+	void setPageSize(size_t size);
 
-
-	set<size_t> blockSizes() const;
-	void setBlockSizes(const set<size_t> &blockSizes);
+	void * mem_alloc(size_t size) override;
 
 private:
-	void initBlockSizes(size_t smalestSize, size_t biggestSize, size_t factor = 2);
-
-	vector<BlockMemoryPage *> m_pages;
-	set<size_t> m_blockSizes;
-	map<size_t, BlockMemoryPage *> m_freePageMap;
+	size_t m_pageSize;
+	set<size_t> m_pageClassesSizes;
+	vector<BlockMemoryRange *> m_pages;
+	map<size_t, BlockMemoryRange *> m_classifiedPageMap;
 
 };
