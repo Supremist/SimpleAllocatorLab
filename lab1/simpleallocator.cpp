@@ -83,7 +83,7 @@ size_t SimpleAllocator::freeSpaceSize() const
 
 size_t SimpleAllocator::largestFreeBlockSize() const
 {
-	m_page->largestRange()->size();
+	m_page->largestFreeRange()->size();
 }
 
 const MemoryManager<MemoryRange> *SimpleAllocator::page() const

@@ -184,11 +184,11 @@ MemoryManager<Range>::mergeRange(MemoryIter range, MemoryIter otherRange)
 
 template <typename Range>
 typename MemoryManager<Range>::ConstMemoryIter
-MemoryManager<Range>::largestRange() const
+MemoryManager<Range>::largestFreeRange() const
 {
 	ConstMemoryIter max = cbegin();
 	for (ConstMemoryIter iter = cbegin(); iter != cend(); ++iter) {
-		if (iter->size() > max->size()) {
+		if (iter->isFree() && iter->size() > max->size()) {
 			max = iter;
 		}
 	}

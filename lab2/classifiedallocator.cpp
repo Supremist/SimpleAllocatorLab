@@ -159,6 +159,51 @@ void ClassifiedAllocator::mem_dump(std::ostream &output, void *start, size_t dum
 	}
 }
 
+void *ClassifiedAllocator::mem_realloc(void *addr, size_t size)
+{
+	// TODO Implement
+}
+
+size_t ClassifiedAllocator::largestFreeBlockSize() const
+{
+	size_t result = m_manager->largestFreeRange()->size();
+	if (result == 0) {
+		size_t max = 0;
+		for (ClassifiedPageMap::const_iterator iter = ++m_classifiedPageMap.cbegin();
+			 iter != m_classifiedPageMap.cend(); ++iter) {
+			PagesList::iterator page = findFreePage(iter->second);
+			if (page != iter->second->end() && max < iter->first) {
+				max = iter->first;
+			}
+		}
+		return max;
+	}
+	return result;
+}
+
+size_t ClassifiedAllocator::freeSpaceSize() const
+{
+	size_t sum = 0;
+	for (const auto &page : m_pagesInfo) {
+		if (!page || page->isFree() || page->isLarge()) {
+			sum += m_pageSize;
+		} else {
+			const BlockMemoryRange &range = *page->managedIter();
+			for (const auto &block : range.blocks()) {
+				if (block) {
+					sum += range.blockSize();
+				}
+			}
+		}
+	}
+	return sum;
+}
+
+size_t ClassifiedAllocator::managedSize() const
+{
+	return m_manager->size();
+}
+
 void ClassifiedAllocator::updatePagesInfo(const PageInfo::Ptr &newPage)
 {
 	size_t lastIndex = newPage->managedIter()->end() / m_pageSize;
@@ -192,7 +237,7 @@ PagesList *ClassifiedAllocator::getEqualySizedPages(size_t blockSize)
 	return nullptr;
 }
 
-PagesList::iterator ClassifiedAllocator::findFreePage(PagesList *pages)
+PagesList::iterator ClassifiedAllocator::findFreePage(PagesList *pages) const
 {
 	auto iter = pages->begin();
 	while (iter != pages->end() && (*iter)->fullyAllocated()) { ++iter; }

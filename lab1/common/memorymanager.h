@@ -33,7 +33,7 @@ public:
 	MemoryIter splitRange(MemoryIter range, size_t newSize);
 	MemoryIter mergeRange(MemoryIter range, MemoryIter otherRange);
 
-	ConstMemoryIter largestRange() const;
+	ConstMemoryIter largestFreeRange() const;
 	size_t freeSpaceSize() const;
 	size_t size() const;
 
