@@ -1,5 +1,4 @@
-#include "memorypage.h"
-
+#include "memorymanager.h"
 
 template <typename Range>
 std::_List_iterator<Range> operator+(const std::_List_iterator<Range> &iter, int i)
@@ -34,14 +33,15 @@ std::_List_iterator<Range> operator-(const std::_List_iterator<Range> &iter, int
 
 
 template <typename Range>
-MemoryPage<Range>::MemoryPage(size_t pageSize)
+MemoryManager<Range>::MemoryManager(size_t pageSize) :
+	m_size(pageSize)
 {
-	m_ranges.push_back(Range(0, pageSize));
+	m_ranges.push_back(Range(pageSize));
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::findFree(size_t requestedSize)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::findFree(size_t requestedSize)
 {
 	for (MemoryIter iter = begin(); iter != end(); ++iter) {
 		if (iter->isFree() && iter->size() >= requestedSize) {
@@ -52,8 +52,8 @@ MemoryPage<Range>::findFree(size_t requestedSize)
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::findRange(size_t blockIndex, MemoryIter searchFrom)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::findRange(size_t blockIndex, MemoryIter searchFrom)
 {
 	for (MemoryIter iter = searchFrom; iter != end(); ++iter) {
 		if (blockIndex >= iter->start() && blockIndex < iter->end()) {
@@ -64,15 +64,15 @@ MemoryPage<Range>::findRange(size_t blockIndex, MemoryIter searchFrom)
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::findRange(size_t blockIndex)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::findRange(size_t blockIndex)
 {
 	return findRange(blockIndex, begin());
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::restoreBlock(const Range &range, MemoryPage::MemoryIter searchFrom)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::restoreBlock(const Range &range, MemoryManager::MemoryIter searchFrom)
 {
 	MemoryIter old = findRange(range.start(), searchFrom);
 	if (old == end() || !old->isFree())
@@ -86,7 +86,7 @@ MemoryPage<Range>::restoreBlock(const Range &range, MemoryPage::MemoryIter searc
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter MemoryPage<Range>::allocate(size_t requestedSize)
+typename MemoryManager<Range>::MemoryIter MemoryManager<Range>::allocate(size_t requestedSize)
 {
 	MemoryIter firstFree = findFree(requestedSize);
 	if (firstFree != end() && requestedSize <= firstFree->size()) {
@@ -98,8 +98,8 @@ typename MemoryPage<Range>::MemoryIter MemoryPage<Range>::allocate(size_t reques
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::reallocate(MemoryPage::MemoryIter range, size_t newSize)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::reallocate(MemoryManager::MemoryIter range, size_t newSize)
 {
 	Range backup = *range;
 	free(range);
@@ -110,50 +110,50 @@ MemoryPage<Range>::reallocate(MemoryPage::MemoryIter range, size_t newSize)
 }
 
 template <typename Range>
-void MemoryPage<Range>::free(MemoryPage::MemoryIter range)
+void MemoryManager<Range>::free(MemoryManager::MemoryIter range)
 {
 	if(range == end())
 		return;
 
 	range->free();
 	for (int shift : {1, -1}) {
-		MemoryPage<Range>::MemoryIter other = range + shift;
+		MemoryManager<Range>::MemoryIter other = range + shift;
 		if(other != end() && other->isFree())
 			mergeRange(range, other);
 	}
 }
 
 template <typename Range>
-typename MemoryPage<Range>::ConstMemoryIter
-MemoryPage<Range>::begin() const
+typename MemoryManager<Range>::ConstMemoryIter
+MemoryManager<Range>::cbegin() const
+{
+	return m_ranges.cbegin();
+}
+
+template <typename Range>
+typename MemoryManager<Range>::ConstMemoryIter
+MemoryManager<Range>::cend() const
+{
+	return m_ranges.cend();
+}
+
+template <typename Range>
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::begin()
 {
 	return m_ranges.begin();
 }
 
 template <typename Range>
-typename MemoryPage<Range>::ConstMemoryIter
-MemoryPage<Range>::end() const
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::end()
 {
 	return m_ranges.end();
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::begin()
-{
-	return m_ranges.begin();
-}
-
-template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::end()
-{
-	return m_ranges.end();
-}
-
-template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::splitRange(MemoryPage::MemoryIter range, size_t newSize)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::splitRange(MemoryManager::MemoryIter range, size_t newSize)
 {
 	if(range == end())
 		return end();
@@ -169,8 +169,8 @@ MemoryPage<Range>::splitRange(MemoryPage::MemoryIter range, size_t newSize)
 }
 
 template <typename Range>
-typename MemoryPage<Range>::MemoryIter
-MemoryPage<Range>::mergeRange(MemoryIter range, MemoryIter otherRange)
+typename MemoryManager<Range>::MemoryIter
+MemoryManager<Range>::mergeRange(MemoryIter range, MemoryIter otherRange)
 {
 	if (range != end() && otherRange != end()
 			&& range != otherRange
@@ -183,11 +183,11 @@ MemoryPage<Range>::mergeRange(MemoryIter range, MemoryIter otherRange)
 }
 
 template <typename Range>
-typename MemoryPage<Range>::ConstMemoryIter
-MemoryPage<Range>::largestRange() const
+typename MemoryManager<Range>::ConstMemoryIter
+MemoryManager<Range>::largestRange() const
 {
-	ConstMemoryIter max = begin();
-	for (ConstMemoryIter iter = begin(); iter != end(); ++iter) {
+	ConstMemoryIter max = cbegin();
+	for (ConstMemoryIter iter = cbegin(); iter != cend(); ++iter) {
 		if (iter->size() > max->size()) {
 			max = iter;
 		}
@@ -196,13 +196,20 @@ MemoryPage<Range>::largestRange() const
 }
 
 template <typename Range>
-size_t MemoryPage<Range>::freeSpaceSize()
+size_t MemoryManager<Range>::freeSpaceSize() const
 {
 	size_t result = 0;
-	for (MemoryIter iter = begin(); iter != end(); ++iter) {
+	for (ConstMemoryIter iter = cbegin(); iter != cend(); ++iter) {
 		if (iter->isFree()) {
 			result += iter->size();
 		}
 	}
 	return result;
 }
+
+template <typename Range>
+size_t MemoryManager<Range>::size() const
+{
+	return m_size;
+}
+

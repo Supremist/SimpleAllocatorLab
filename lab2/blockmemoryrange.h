@@ -30,8 +30,12 @@ public:
 	bool canResize(size_t newSize);
 	BlockMemoryRange *split(size_t newSize) override;
 
+	bool fullyAllocated();
+
 	Block allocateBlock();
 	void freeBlock(size_t blockIndex);
+
+	vector<BlockType> blocks() const;
 
 private:
 	BlockMemoryRange();

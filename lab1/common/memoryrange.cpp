@@ -1,8 +1,13 @@
 #include "memoryrange.h"
 
-MemoryRange::MemoryRange(size_t MemoryRangeStart, size_t MemoryRangeSize, bool free):
-	m_start(MemoryRangeStart),
-	m_size(MemoryRangeSize),
+MemoryRange::MemoryRange(size_t rangeSize) :
+	MemoryRange(0, rangeSize)
+{
+}
+
+MemoryRange::MemoryRange(size_t rangeStart, size_t rangeSize, bool free):
+	m_start(rangeStart),
+	m_size(rangeSize),
 	is_free(free)
 {
 }
@@ -48,7 +53,7 @@ size_t MemoryRange::size() const
 	return m_size;
 }
 
-bool MemoryRange::isFree()
+bool MemoryRange::isFree() const
 {
 	return is_free;
 }

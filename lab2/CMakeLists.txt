@@ -8,10 +8,12 @@ include_directories(${COMMON_DIR})
 set(HEADER_LIST
 	classifiedallocator.h
 	blockmemoryrange.h
+	pageinfo.h
 	${COMMON_DIR}/abstractallocator.h
 	${COMMON_DIR}/blockalignutils.h
 	${COMMON_DIR}/memoryrange.h
-	${COMMON_DIR}/memorypage.h
+	${COMMON_DIR}/memorymanager.h
+	${COMMON_DIR}/allocatedblock.h
 	)
 
 set(SRC_LIST
@@ -21,10 +23,11 @@ set(SRC_LIST
 	${COMMON_DIR}/abstractallocator.cpp
 	${COMMON_DIR}/blockalignutils.cpp
 	${COMMON_DIR}/memoryrange.cpp
+	${COMMON_DIR}/allocatedblock.cpp
 	)
 
 set(TEMPLATES_LIST
-	${COMMON_DIR}/memorypage.hpp
+	${COMMON_DIR}/memorymanager.hpp
 	)
 
 add_executable(${PROJECT_NAME} ${HEADER_LIST} ${TEMPALTES_LIST} ${SRC_LIST})

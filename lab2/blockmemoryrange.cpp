@@ -78,6 +78,11 @@ BlockMemoryRange *BlockMemoryRange::split(size_t newSize)
 	return result;
 }
 
+bool BlockMemoryRange::fullyAllocated()
+{
+	return !isFree() && m_freeBlocksIndexes.empty();
+}
+
 BlockMemoryRange::Block BlockMemoryRange::allocateBlock()
 {
 	if (isFree()) {
@@ -101,6 +106,11 @@ void BlockMemoryRange::freeBlock(size_t blockIndex)
 	if (m_freeBlocksIndexes.size() == maxBlockCount()) {
 		free();
 	}
+}
+
+vector<BlockMemoryRange::BlockType> BlockMemoryRange::blocks() const
+{
+	return m_blocks;
 }
 
 BlockMemoryRange::BlockMemoryRange() : MemoryRange(0,0)

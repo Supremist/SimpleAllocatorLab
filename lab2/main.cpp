@@ -1,14 +1,13 @@
 #include <iostream>
 
-#include "blockmemorypage.h"
+#include "classifiedallocator.h"
 
 using std::cout;
 
 
 int main(int argc, char *argv[])
 {
-	BlockMemoryPage p(100);
-//	BlockMemoryPage::MemoryIter b = p.allocate(10);
+	//ClassifiedAllocator alloc(10, 100, {3, 7, 18, 40});
 	cout << "hello";
     return 0;
 }

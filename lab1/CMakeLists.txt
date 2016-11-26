@@ -8,7 +8,8 @@ set(HEADER_LIST
     common/abstractallocator.h
     common/blockalignutils.h
     common/memoryrange.h
-    common/memorypage.h
+	common/memorymanager.h
+	common/allocatedblock.h
     )
 
 set(SRC_LIST
@@ -17,10 +18,11 @@ set(SRC_LIST
     common/abstractallocator.cpp
     common/blockalignutils.cpp
     common/memoryrange.cpp
+	common/allocatedblock.cpp
     )
 
 set(TEMPLATES_LIST
-    common/memorypage.hpp
+	common/memorymanager.hpp
     )
 
 add_executable(${PROJECT_NAME} ${HEADER_LIST} ${TEMPALTES_LIST} ${SRC_LIST})

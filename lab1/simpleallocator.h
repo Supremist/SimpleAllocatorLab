@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstdlib>
-#include "memorypage.h"
+#include "memorymanager.h"
 #include "memoryrange.h"
 #include "blockalignutils.h"
 #include "abstractallocator.h"
+#include "allocatedblock.h"
 
 class SimpleAllocator : public AbstractAllocator
 {
@@ -17,16 +18,18 @@ public:
 	void mem_free(void *addr) override;
 	void mem_dump(ostream &output, void *start = nullptr, size_t dumpSize = 0) override;
 
+	size_t managedSize() const override;
 	size_t freeSpaceSize() const override;
 	size_t largestFreeBlockSize() const override;
 
-	const MemoryPage<MemoryRange> * page() const;
+	const MemoryManager<MemoryRange> * page() const;
 	size_t blockSize() const;
 
 private:
 	size_t getBlockIndex(void *block);
 	void * getBlockPointer(size_t blockIndex);
 
-	MemoryPage<MemoryRange> * m_page;
+	MemoryManager<MemoryRange> * m_page;
 	size_t m_blockSize;
+	AllocatedBlock m_memoryBlock;
 };
