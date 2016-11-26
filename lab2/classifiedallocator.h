@@ -34,6 +34,7 @@ public:
 
 	void * mem_alloc(size_t size) override;
 	void mem_free(void *addr) override;
+	void mem_dump(ostream &output, void *start = nullptr, size_t dumpSize = 0) override;
 
 private:
 	void updatePagesInfo(const PageInfo::Ptr &newPage);

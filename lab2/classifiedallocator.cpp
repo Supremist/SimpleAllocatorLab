@@ -111,6 +111,54 @@ void ClassifiedAllocator::mem_free(void *addr)
 	pageInfo->free();
 }
 
+
+void ClassifiedAllocator::mem_dump(std::ostream &output, void *start, size_t dumpSize)
+{
+	size_t startPosition;
+	if (start) {
+		startPosition = m_memoryBlock.pointerToPosition(start);
+	} else {
+		startPosition = 0;
+	}
+
+	size_t startIndex = BlockAlignUtils::alignUpper(startPosition, m_pageSize);
+	size_t endIndex;
+	if (dumpSize >= m_manager->size() || dumpSize <= 0) {
+		endIndex = m_manager->size() / m_pageSize;
+	} else {
+		endIndex = BlockAlignUtils::alignUpper(startPosition + dumpSize, m_pageSize);
+	}
+
+	for (size_t index = startIndex; index <= endIndex; ++index) {
+		output << index * m_pageSize << " - " << (index + 1) * m_pageSize << " ";
+		PageInfo::Ptr pageInfo = getPageInfo(index);
+		if (pageInfo) {
+			if (pageInfo->isLarge()) {
+				output << "Large allocated page";
+			} else {
+				size_t blockSize = pageInfo->managedIter()->blockSize();
+				output << "Page clasified with block size ";
+				output << blockSize << ":\n";
+
+				auto blocks = pageInfo->managedIter()->blocks();
+				for (size_t blockIndex = 0; blockIndex < blocks.size(); ++blockIndex) {
+					output << " " << blockIndex * blockSize << " - ";
+					output << (blockIndex + 1) * blockSize << " ";
+					if (blocks[blockIndex]) {
+						output << "Free block";
+					} else {
+						output << "Allocated block";
+					}
+					output << "\n";
+				}
+			}
+		} else {
+			output << "Free page";
+		}
+		output << "\n";
+	}
+}
+
 void ClassifiedAllocator::updatePagesInfo(const PageInfo::Ptr &newPage)
 {
 	size_t lastIndex = newPage->managedIter()->end() / m_pageSize;
