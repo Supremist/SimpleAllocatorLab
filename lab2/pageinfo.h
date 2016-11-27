@@ -49,6 +49,10 @@ public:
 
 	}
 
+	PagesList *siblingPages(){
+		return m_equsizedPages;
+	}
+
 	bool isFree() const {
 		return m_isFree;
 	}

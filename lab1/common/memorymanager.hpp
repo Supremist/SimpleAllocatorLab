@@ -53,7 +53,7 @@ MemoryManager<Range>::findFree(size_t requestedSize)
 
 template <typename Range>
 typename MemoryManager<Range>::MemoryIter
-MemoryManager<Range>::findRange(size_t blockIndex, MemoryIter searchFrom)
+MemoryManager<Range>::findRange(size_t blockIndex, typename MemoryManager<Range>::MemoryIter searchFrom)
 {
 	if (searchFrom == end()) {
 		searchFrom = begin();
@@ -75,7 +75,7 @@ MemoryManager<Range>::findRange(size_t blockIndex)
 
 template <typename Range>
 typename MemoryManager<Range>::MemoryIter
-MemoryManager<Range>::restoreBlock(const Range &range, MemoryManager::MemoryIter searchFrom)
+MemoryManager<Range>::restoreBlock(const Range &range, typename MemoryManager<Range>::MemoryIter searchFrom)
 {
 	MemoryIter old = findRange(range.start(), searchFrom);
 	if (old == end() || !old->isFree())
@@ -103,7 +103,7 @@ typename MemoryManager<Range>::MemoryIter MemoryManager<Range>::allocate(size_t 
 
 template <typename Range>
 typename MemoryManager<Range>::MemoryIter
-MemoryManager<Range>::reallocate(MemoryManager::MemoryIter range, size_t newSize)
+MemoryManager<Range>::reallocate(typename MemoryManager<Range>::MemoryIter range, size_t newSize)
 {
 	Range backup = *range;
 	free(range);
@@ -114,14 +114,21 @@ MemoryManager<Range>::reallocate(MemoryManager::MemoryIter range, size_t newSize
 }
 
 template <typename Range>
-void MemoryManager<Range>::free(MemoryManager::MemoryIter range)
+void MemoryManager<Range>::free(typename MemoryManager<Range>::MemoryIter range)
 {
 	if(range == end())
 		return;
 
 	range->free();
 	for (int shift : {1, -1}) {
-		MemoryManager<Range>::MemoryIter other = range + shift;
+		MemoryManager<Range>::MemoryIter other;
+		if (range == begin() && shift == -1) {
+			other = end();
+		} else if (range == end() && shift == 1) {
+			other = begin();
+		} else {
+			other = range + shift;
+		}
 		if(other != end() && other->isFree())
 			mergeRange(range, other);
 	}
@@ -157,7 +164,7 @@ MemoryManager<Range>::end()
 
 template <typename Range>
 typename MemoryManager<Range>::MemoryIter
-MemoryManager<Range>::splitRange(MemoryManager::MemoryIter range, size_t newSize)
+MemoryManager<Range>::splitRange(typename MemoryManager<Range>::MemoryIter range, size_t newSize)
 {
 	if(range == end())
 		return end();
@@ -174,7 +181,8 @@ MemoryManager<Range>::splitRange(MemoryManager::MemoryIter range, size_t newSize
 
 template <typename Range>
 typename MemoryManager<Range>::MemoryIter
-MemoryManager<Range>::mergeRange(MemoryIter range, MemoryIter otherRange)
+MemoryManager<Range>::mergeRange(typename MemoryManager<Range>::MemoryIter range,
+								 typename MemoryManager<Range>::MemoryIter otherRange)
 {
 	if (range != end() && otherRange != end()
 			&& range != otherRange

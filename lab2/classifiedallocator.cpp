@@ -179,8 +179,14 @@ void *ClassifiedAllocator::mem_realloc(void *addr, size_t size)
 	if (!info.isValid) {
 		return nullptr;
 	}
-	BlockMemoryRange backup = *info.pageInfo->managedIter();
-	auto previous = info.pageInfo->managedIter() - 1;
+	auto page = info.pageInfo->managedIter();
+	BlockMemoryRange backup = *page;
+	ClassifiedManager::MemoryIter previous;
+	if (page == m_manager->begin()) {
+		previous = m_manager->end();
+	} else {
+		previous = --page;
+	}
 	mem_free(info);
 	void *result = mem_alloc(size);
 	if (result) {
@@ -188,7 +194,7 @@ void *ClassifiedAllocator::mem_realloc(void *addr, size_t size)
 	}
 	auto newIter = m_manager->restoreBlock(backup, previous);
 	info.pageInfo->restore(newIter);
-	auto debug = *newIter;
+	return nullptr;
 }
 
 size_t ClassifiedAllocator::largestFreeBlockSize() const
