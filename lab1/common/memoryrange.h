@@ -17,7 +17,7 @@ public:
 	size_t size() const;
 	bool isFree() const;
 	void allocate();
-	void free();
+	virtual void free();
 
 	MemoryRange & operator = (const MemoryRange & other) = default;
 

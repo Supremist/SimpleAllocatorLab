@@ -22,6 +22,14 @@ class ClassifiedAllocator: AbstractAllocator
 {
 public:
 
+	struct PointerInfo {
+		size_t position;
+		size_t offset;
+		size_t blockIndex;
+		PageInfo::Ptr pageInfo;
+		bool isValid;
+	};
+
 	explicit ClassifiedAllocator(size_t pageCount, size_t pageSize, const set<size_t> &pageClassesSizes = {});
 	~ClassifiedAllocator();
 
@@ -31,6 +39,8 @@ public:
 
 	size_t pageSize();
 	void setPageSize(size_t size);
+
+	PointerInfo getPointerInfo(void *ptr);
 
 	void * mem_alloc(size_t size) override;
 	void mem_free(void *addr) override;
@@ -45,6 +55,7 @@ private:
 	void updatePagesInfo(const PageInfo::Ptr &newPage);
 	PageInfo::Ptr getPageInfo(size_t pageIndex);
 	PagesList * getEqualySizedPages(size_t blockSize);
+	void mem_free(const PointerInfo &info);
 
 	PagesList::iterator findFreePage(PagesList *pages) const;
 

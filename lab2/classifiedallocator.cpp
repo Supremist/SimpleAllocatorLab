@@ -13,11 +13,12 @@ ClassifiedAllocator::ClassifiedAllocator(size_t pageCount, size_t pageSize, cons
 
 ClassifiedAllocator::~ClassifiedAllocator()
 {
-	delete m_manager;
+	m_pagesInfo.clear();
 	for (ClassifiedPageMap::iterator it = m_classifiedPageMap.begin();
 		 it != m_classifiedPageMap.end(); ++it) {
 		delete it->second;
 	}
+	delete m_manager;
 }
 
 void ClassifiedAllocator::clearUnusedClasses()
@@ -29,6 +30,29 @@ void ClassifiedAllocator::clearUnusedClasses()
 			++it;
 		}
 	}
+}
+
+ClassifiedAllocator::PointerInfo ClassifiedAllocator::getPointerInfo(void *ptr)
+{
+	PointerInfo result;
+	if (!ptr) {
+		result.isValid = false;
+		return result;
+	}
+
+	result.position = m_memoryBlock.pointerToPosition(ptr);
+	size_t pageIndex = result.position / m_pageSize;
+	result.pageInfo = getPageInfo(pageIndex);
+	if (!result.pageInfo) {
+		result.isValid = false;
+		return result;
+	}
+	ClassifiedManager::MemoryIter page = result.pageInfo->managedIter();
+
+	result.offset = result.position - pageIndex * m_pageSize;
+	result.blockIndex = result.offset / page->blockSize();
+	result.isValid = result.offset % page->blockSize() == 0;
+	return result;
 }
 
 set<size_t> ClassifiedAllocator::pageClassesSizes() const
@@ -59,6 +83,9 @@ void *ClassifiedAllocator::mem_alloc(size_t size)
 		} else {
 			// Allocate new classified page
 			range = m_manager->allocate(m_pageSize);
+			if (range == m_manager->end()) {
+				return nullptr;
+			}
 			range->free();
 			range->resizeBlocks(alignedSize);
 			if (pages) {
@@ -68,6 +95,7 @@ void *ClassifiedAllocator::mem_alloc(size_t size)
 				m_classifiedPageMap.insert(std::make_pair(alignedSize, pages));
 			}
 			auto info = PageInfo::createClassifiedPage(pages, pages->begin());
+			auto debug = *info->managedIter();
 			updatePagesInfo(std::shared_ptr<PageInfo>(info));
 		}
 
@@ -83,6 +111,9 @@ void *ClassifiedAllocator::mem_alloc(size_t size)
 		// Allocate large page
 		size_t normalPageCount = BlockAlignUtils::alignUpper(size, m_pageSize);
 		range = m_manager->allocate(normalPageCount * m_pageSize);
+		if (range == m_manager->end()) {
+			return nullptr;
+		}
 		updatePagesInfo(std::shared_ptr<PageInfo>(PageInfo::createLargePage(range)));
 		return m_memoryBlock.positionToPointer(range->start());
 	}
@@ -90,25 +121,7 @@ void *ClassifiedAllocator::mem_alloc(size_t size)
 
 void ClassifiedAllocator::mem_free(void *addr)
 {
-	if (!addr) {
-		return;
-	}
-	size_t position = m_memoryBlock.pointerToPosition(addr);
-	size_t pageIndex = position / m_pageSize;
-	auto pageInfo = getPageInfo(pageIndex);
-	if (!pageInfo) {
-		return;
-	}
-	ClassifiedManager::MemoryIter page = pageInfo->managedIter();
-	if (page->maxBlockCount() > 1) {
-		size_t offset = position - pageIndex * m_pageSize;
-		page->freeBlock(offset / page->blockSize());
-		if (!page->isFree()) {
-			return;
-		}
-	}
-	m_manager->free(page);
-	pageInfo->free();
+	mem_free(getPointerInfo(addr));
 }
 
 
@@ -129,7 +142,7 @@ void ClassifiedAllocator::mem_dump(std::ostream &output, void *start, size_t dum
 		endIndex = BlockAlignUtils::alignUpper(startPosition + dumpSize, m_pageSize);
 	}
 
-	for (size_t index = startIndex; index <= endIndex; ++index) {
+	for (size_t index = startIndex; index < endIndex; ++index) {
 		output << index * m_pageSize << " - " << (index + 1) * m_pageSize << " ";
 		PageInfo::Ptr pageInfo = getPageInfo(index);
 		if (pageInfo) {
@@ -139,7 +152,7 @@ void ClassifiedAllocator::mem_dump(std::ostream &output, void *start, size_t dum
 				size_t blockSize = pageInfo->managedIter()->blockSize();
 				output << "Page clasified with block size ";
 				output << blockSize << ":\n";
-
+				auto debug = *pageInfo->managedIter();
 				auto blocks = pageInfo->managedIter()->blocks();
 				for (size_t blockIndex = 0; blockIndex < blocks.size(); ++blockIndex) {
 					output << " " << blockIndex * blockSize << " - ";
@@ -157,11 +170,25 @@ void ClassifiedAllocator::mem_dump(std::ostream &output, void *start, size_t dum
 		}
 		output << "\n";
 	}
+	output << "\n";
 }
 
 void *ClassifiedAllocator::mem_realloc(void *addr, size_t size)
 {
-	// TODO Implement
+	PointerInfo info = getPointerInfo(addr);
+	if (!info.isValid) {
+		return nullptr;
+	}
+	BlockMemoryRange backup = *info.pageInfo->managedIter();
+	auto previous = info.pageInfo->managedIter() - 1;
+	mem_free(info);
+	void *result = mem_alloc(size);
+	if (result) {
+		return result;
+	}
+	auto newIter = m_manager->restoreBlock(backup, previous);
+	info.pageInfo->restore(newIter);
+	auto debug = *newIter;
 }
 
 size_t ClassifiedAllocator::largestFreeBlockSize() const
@@ -214,8 +241,11 @@ void ClassifiedAllocator::updatePagesInfo(const PageInfo::Ptr &newPage)
 
 PageInfo::Ptr ClassifiedAllocator::getPageInfo(size_t pageIndex)
 {
+	if (pageIndex < 0 || pageIndex >= m_pagesInfo.size()) {
+		return nullptr;
+	}
 	auto pageInfo = m_pagesInfo[pageIndex];
-	if (pageInfo->isFree()) {
+	if (pageInfo && pageInfo->isFree()) {
 		return nullptr;
 	}
 	return pageInfo;
@@ -235,6 +265,19 @@ PagesList *ClassifiedAllocator::getEqualySizedPages(size_t blockSize)
 		//TODO error
 	}
 	return nullptr;
+}
+
+void ClassifiedAllocator::mem_free(const ClassifiedAllocator::PointerInfo &info)
+{
+	if (!info.isValid) {
+		return;
+	}
+	auto page = info.pageInfo->managedIter();
+	page->freeBlock(info.blockIndex);
+	if (page->isFree()) {
+		m_manager->free(page);
+		info.pageInfo->free();
+	}
 }
 
 PagesList::iterator ClassifiedAllocator::findFreePage(PagesList *pages) const

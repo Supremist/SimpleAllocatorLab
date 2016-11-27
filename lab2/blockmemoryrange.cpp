@@ -36,6 +36,13 @@ void BlockMemoryRange::resize(size_t newSize)
 	_resize(newSize);
 }
 
+void BlockMemoryRange::free()
+{
+	MemoryRange::free();
+	resizeBlocks(size());
+	updateBlocks();
+}
+
 bool BlockMemoryRange::canResize(size_t newSize)
 {
 	if (isFree() || newSize >= size()) {
@@ -56,7 +63,7 @@ BlockMemoryRange *BlockMemoryRange::split(size_t newSize)
 		return nullptr;
 
 	vector<bool> otherBlocks;
-	if (!isFree()) {
+	if (!isFree() && !isLarge()) {
 		size_t newBlocksSize = BlockAlignUtils::alignUpper(newSize, m_blockSize);
 		otherBlocks.insert(otherBlocks.begin(), m_blocks.begin() + newBlocksSize, m_blocks.end());
 		m_blocks.resize(newBlocksSize);
@@ -67,11 +74,10 @@ BlockMemoryRange *BlockMemoryRange::split(size_t newSize)
 		return nullptr;
 	}
 
-	BlockMemoryRange *result = new BlockMemoryRange();
-	(*result).MemoryRange::operator =(*base);
+	BlockMemoryRange *result = new BlockMemoryRange(*base);
 	delete base;
 
-	if(!isFree()) {
+	if(!isFree() && !isLarge()) {
 		result->m_blocks = otherBlocks;
 		result->initFreeBlocksIndexes();
 	}
@@ -108,6 +114,11 @@ void BlockMemoryRange::freeBlock(size_t blockIndex)
 	}
 }
 
+bool BlockMemoryRange::isLarge() const
+{
+	return m_blockSize == size();
+}
+
 vector<BlockMemoryRange::BlockType> BlockMemoryRange::blocks() const
 {
 	return m_blocks;
@@ -117,10 +128,21 @@ BlockMemoryRange::BlockMemoryRange() : MemoryRange(0,0)
 {
 }
 
+BlockMemoryRange::BlockMemoryRange(const MemoryRange &other) :
+	MemoryRange(other),
+	m_blockSize(other.size())
+{
+}
+
 void BlockMemoryRange::_resize(size_t newSize)
 {
-	size_t newBlockCount = BlockAlignUtils::alignUpper(newSize, m_blockSize);
-	MemoryRange::resize(newBlockCount * blockSize());
+	if (isLarge()) {
+		MemoryRange::resize(newSize);
+		resizeBlocks(newSize);
+	} else {
+		size_t newBlockCount = BlockAlignUtils::alignUpper(newSize, m_blockSize);
+		MemoryRange::resize(newBlockCount * blockSize());
+	}
 	if (!isFree()) {
 		updateBlocks();
 	}

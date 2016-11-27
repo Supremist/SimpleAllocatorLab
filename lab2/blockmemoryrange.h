@@ -19,7 +19,6 @@ public:
 	BlockMemoryRange(size_t size);
 	BlockMemoryRange(size_t start, size_t blockCount, size_t blockSize);
 
-
 	using BlockType = bool;
 
 	size_t maxBlockCount() const;
@@ -27,6 +26,7 @@ public:
 
 	void resizeBlocks(size_t newSize);
 	void resize (size_t newSize) override;
+	void free() override;
 	bool canResize(size_t newSize);
 	BlockMemoryRange *split(size_t newSize) override;
 
@@ -34,11 +34,13 @@ public:
 
 	Block allocateBlock();
 	void freeBlock(size_t blockIndex);
+	bool isLarge() const;
 
 	vector<BlockType> blocks() const;
 
 private:
 	BlockMemoryRange();
+	BlockMemoryRange(const MemoryRange &other);
 
 	void _resize(size_t newSize);
 	void updateBlocks();
@@ -48,5 +50,4 @@ private:
 	size_t m_blockSize;
 	vector<BlockType> m_blocks;
 	list<size_t> m_freeBlocksIndexes;
-
 };

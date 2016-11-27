@@ -55,6 +55,9 @@ template <typename Range>
 typename MemoryManager<Range>::MemoryIter
 MemoryManager<Range>::findRange(size_t blockIndex, MemoryIter searchFrom)
 {
+	if (searchFrom == end()) {
+		searchFrom = begin();
+	}
 	for (MemoryIter iter = searchFrom; iter != end(); ++iter) {
 		if (blockIndex >= iter->start() && blockIndex < iter->end()) {
 			return iter;
@@ -83,6 +86,7 @@ MemoryManager<Range>::restoreBlock(const Range &range, MemoryManager::MemoryIter
 	if(range.end() < old->end())
 		splitRange(old, range.size());
 	*old = range;
+	return old;
 }
 
 template <typename Range>

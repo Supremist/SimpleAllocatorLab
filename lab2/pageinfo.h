@@ -30,14 +30,23 @@ public:
 	}
 
 	bool isLarge() const {
-		return m_equsizedPages == nullptr;
+		return m_managedIter->isLarge();
 	}
 
 	void free() {
-		if (!isLarge() && m_equsizedPages) {
-			m_equsizedPages->erase(m_pageMapIter);
+		if (!isLarge() && !isFree() && m_equsizedPages) {
+			m_pageMapIter = m_equsizedPages->erase(m_pageMapIter);
 		}
 		m_isFree = true;
+	}
+
+	void restore(const ClassifiedManager::MemoryIter &newManaged) {
+		m_managedIter = newManaged;
+		if (!isLarge() && isFree() && m_equsizedPages) {
+			m_pageMapIter = m_equsizedPages->insert(m_pageMapIter, m_managedIter);
+		}
+		m_isFree = false;
+
 	}
 
 	bool isFree() const {
@@ -48,11 +57,12 @@ public:
 		free();
 	}
 
+	PageInfo & operator= (const PageInfo &other) = delete;
+
 private:
 	PageInfo(){}
 	bool m_isFree = false;
 	ClassifiedManager::MemoryIter m_managedIter;
-	PagesList *m_equsizedPages;
+	PagesList *m_equsizedPages = nullptr;
 	PagesList::iterator m_pageMapIter;
-
 };
