@@ -51,7 +51,8 @@ ClassifiedAllocator::PointerInfo ClassifiedAllocator::getPointerInfo(void *ptr)
 
 	result.offset = result.position - pageIndex * m_pageSize;
 	result.blockIndex = result.offset / page->blockSize();
-	result.isValid = result.offset % page->blockSize() == 0;
+	result.isValid = result.offset % page->blockSize() == 0
+			&& result.position == page->start();
 	return result;
 }
 
